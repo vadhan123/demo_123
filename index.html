@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ganesh Pandal Manager</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #fff7ed; color: #3b1d0c; }
+    header { padding: 28px 7%; color: white; background: linear-gradient(120deg, #b91c1c, #ea580c); }
+    h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.8rem); }
+    header p { margin: 8px 0 0; }
+    main { width: min(1100px, 90%); margin: 28px auto; }
+    .stats, .grid { display: grid; gap: 18px; }
+    .stats { grid-template-columns: repeat(3, 1fr); margin-bottom: 24px; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .card { background: #fff; border-radius: 14px; padding: 22px; box-shadow: 0 4px 14px #7c2d1220; }
+    .stat { text-align: center; border-top: 5px solid #f97316; }
+    .stat strong { display: block; color: #c2410c; font-size: 2rem; margin-top: 7px; }
+    h2 { margin-top: 0; color: #9a3412; }
+    form { display: grid; gap: 11px; }
+    input, select, textarea, button { font: inherit; border-radius: 7px; padding: 10px; }
+    input, select, textarea { width: 100%; border: 1px solid #fdba74; }
+    textarea { min-height: 85px; resize: vertical; }
+    button { cursor: pointer; border: 0; color: white; background: #c2410c; font-weight: bold; }
+    button:hover { background: #9a3412; }
+    .delete { color: #b91c1c; background: #fee2e2; padding: 6px 9px; font-size: .8rem; }
+    .delete:hover { background: #fecaca; }
+    .item { display: flex; gap: 12px; justify-content: space-between; align-items: start; padding: 13px 0; border-bottom: 1px solid #ffedd5; }
+    .item:last-child { border-bottom: 0; }
+    .item p { margin: 5px 0 0; color: #6b3c23; }
+    .tag { display: inline-block; margin-top: 6px; padding: 3px 7px; border-radius: 999px; background: #ffedd5; color: #9a3412; font-size: .8rem; }
+    .empty { color: #9a7b64; text-align: center; padding: 12px; }
+    footer { text-align: center; padding: 20px; color: #7c2d12; }
+    @media (max-width: 700px) { .stats, .grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🪔 Ganesh Pandal Manager</h1>
+    <p>Manage volunteer allotments, duties, and community announcements.</p>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div class="card stat">Total allotments<strong id="allotmentCount">0</strong></div>
+      <div class="card stat">Volunteers<strong id="volunteerCount">0</strong></div>
+      <div class="card stat">Posts<strong id="postCount">0</strong></div>
+    </section>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Allot a duty</h2>
+        <form id="allotmentForm">
+          <input id="person" required placeholder="Volunteer or member name" />
+          <select id="duty" required>
+            <option value="">Select duty</option>
+            <option>Decoration</option><option>Prasad Distribution</option>
+            <option>Security</option><option>Donation Counter</option>
+            <option>Cleaning</option><option>Stage &amp; Sound</option>
+          </select>
+          <input id="shift" required placeholder="Date / shift (e.g., Day 1, Morning)" />
+          <button type="submit">Allot duty</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Create a post</h2>
+        <form id="postForm">
+          <input id="postTitle" required placeholder="Post title" />
+          <textarea id="postMessage" required placeholder="Announcement or instruction"></textarea>
+          <button type="submit">Publish post</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Duty allotments</h2>
+        <div id="allotmentList"></div>
+      </div>
+
+      <div class="card">
+        <h2>Community posts</h2>
+        <div id="postList"></div>
+      </div>
+    </section>
+  </main>
+  <footer>Ganpati Bappa Morya! ✨</footer>
+
+  <script>
+    const get = key => JSON.parse(localStorage.getItem(key) || '[]');
+    const save = (key, data) => localStorage.setItem(key, JSON.stringify(data));
+    let allotments = get('ganeshAllotments');
+    let posts = get('ganeshPosts');
+
+    function escapeHTML(value) {
+      const box = document.createElement('div'); box.textContent = value; return box.innerHTML;
+    }
+    function render() {
+      document.getElementById('allotmentCount').textContent = allotments.length;
+      document.getElementById('volunteerCount').textContent = new Set(allotments.map(a => a.person.toLowerCase())).size;
+      document.getElementById('postCount').textContent = posts.length;
+      document.getElementById('allotmentList').innerHTML = allotments.length ? allotments.map((a, i) => `
+        <div class="item"><div><strong>${escapeHTML(a.person)}</strong><p>${escapeHTML(a.duty)}</p><span class="tag">${escapeHTML(a.shift)}</span></div><button class="delete" onclick="removeAllotment(${i})">Remove</button></div>`).join('') : '<p class="empty">No duties allotted yet.</p>';
+      document.getElementById('postList').innerHTML = posts.length ? posts.map((p, i) => `
+        <div class="item"><div><strong>${escapeHTML(p.title)}</strong><p>${escapeHTML(p.message)}</p><span class="tag">${p.date}</span></div><button class="delete" onclick="removePost(${i})">Remove</button></div>`).join('') : '<p class="empty">No posts published yet.</p>';
+    }
+    function removeAllotment(i) { allotments.splice(i, 1); save('ganeshAllotments', allotments); render(); }
+    function removePost(i) { posts.splice(i, 1); save('ganeshPosts', posts); render(); }
+    document.getElementById('allotmentForm').addEventListener('submit', e => {
+      e.preventDefault();
+      allotments.unshift({ person: person.value.trim(), duty: duty.value, shift: shift.value.trim() });
+      save('ganeshAllotments', allotments); e.target.reset(); render();
+    });
+    document.getElementById('postForm').addEventListener('submit', e => {
+      e.preventDefault();
+      posts.unshift({ title: postTitle.value.trim(), message: postMessage.value.trim(), date: new Date().toLocaleDateString() });
+      save('ganeshPosts', posts); e.target.reset(); render();
+    });
+    render();
+  </script>
+</body>
+</html>
